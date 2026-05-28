@@ -1,0 +1,1604 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>가계부</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;500;600&family=DM+Mono:wght@300;400;500&family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  :root {
+    --cream: #FAF7F2;
+    --cream2: #F3EFE8;
+    --cream3: #EAE4D9;
+    --warm-gray: #C8BFB0;
+    --brown: #8B7355;
+    --brown-dark: #5C4A32;
+    --text: #2D2620;
+    --text-mid: #6B5C4E;
+    --text-light: #A89880;
+    --accent: #C17D52;
+    --accent-light: #E8C4A0;
+    --green: #7A9E7E;
+    --green-light: #D4E8D6;
+    --red: #C0614A;
+    --red-light: #F0D4CE;
+    --blue: #5A7FA0;
+    --blue-light: #D0E0EE;
+    --shadow: 0 2px 12px rgba(90,60,30,0.08);
+    --shadow-lg: 0 6px 28px rgba(90,60,30,0.12);
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Serif KR', serif;
+    background: var(--cream);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--cream);
+    border-bottom: 1.5px solid var(--cream3);
+    padding: 20px 32px 0;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .header-top {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .logo {
+    font-family: 'Gowun Batang', serif;
+    font-size: 22px; font-weight: 700;
+    color: var(--brown-dark);
+    letter-spacing: -0.3px;
+  }
+  .logo span { color: var(--accent); }
+  .month-nav {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .month-nav button {
+    background: none; border: 1.5px solid var(--cream3);
+    border-radius: 50%; width: 30px; height: 30px;
+    cursor: pointer; font-size: 14px; color: var(--brown);
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .month-nav button:hover { background: var(--cream2); border-color: var(--warm-gray); }
+  .month-display {
+    font-family: 'DM Mono', monospace;
+    font-size: 15px; font-weight: 500;
+    color: var(--brown-dark); min-width: 80px; text-align: center;
+  }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex; gap: 4px;
+  }
+  .tab-btn {
+    background: none; border: none; cursor: pointer;
+    font-family: 'Noto Serif KR', serif;
+    font-size: 13px; color: var(--text-light);
+    padding: 10px 18px 12px;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s; white-space: nowrap;
+  }
+  .tab-btn.active {
+    color: var(--brown-dark);
+    border-bottom-color: var(--accent);
+    font-weight: 600;
+  }
+  .tab-btn:hover:not(.active) { color: var(--text-mid); }
+
+  /* ── MAIN ── */
+  main { padding: 28px 32px; max-width: 900px; margin: 0 auto; }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; animation: fadeIn 0.25s ease; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+  /* ── CARDS ── */
+  .card {
+    background: #fff;
+    border-radius: var(--radius);
+    padding: 22px 24px;
+    box-shadow: var(--shadow);
+    margin-bottom: 20px;
+  }
+  .card-title {
+    font-family: 'Gowun Batang', serif;
+    font-size: 15px; font-weight: 700;
+    color: var(--brown-dark);
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-title .icon { font-size: 16px; }
+
+  /* ── SECTION GRID ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 640px) { .grid-2 { grid-template-columns: 1fr; } main { padding: 20px 16px; } }
+
+  /* ── BADGES ── */
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 20px;
+    font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500;
+  }
+  .badge-green { background: var(--green-light); color: var(--green); }
+  .badge-red { background: var(--red-light); color: var(--red); }
+  .badge-blue { background: var(--blue-light); color: var(--blue); }
+  .badge-brown { background: var(--cream3); color: var(--brown); }
+
+  /* ── INPUTS ── */
+  input[type="text"], input[type="number"], input[type="date"], select, textarea {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 13px;
+    border: 1.5px solid var(--cream3);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    background: var(--cream);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--accent-light);
+    background: #fff;
+  }
+  textarea { resize: vertical; min-height: 70px; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 12px; font-weight: 600;
+    border: none; border-radius: var(--radius-sm);
+    padding: 8px 14px; cursor: pointer;
+    transition: all 0.2s; white-space: nowrap;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--brown); }
+  .btn-ghost { background: var(--cream2); color: var(--brown); border: 1.5px solid var(--cream3); }
+  .btn-ghost:hover { background: var(--cream3); }
+  .btn-danger { background: var(--red-light); color: var(--red); }
+  .btn-danger:hover { background: #e8c0b8; }
+  .btn-sm { padding: 5px 10px; font-size: 11px; }
+  .btn-icon { padding: 6px 8px; font-size: 13px; }
+
+  /* ── ADD ROW FORM ── */
+  .add-row {
+    display: flex; gap: 8px; align-items: center;
+    padding: 12px; background: var(--cream); border-radius: var(--radius-sm);
+    margin-top: 12px; flex-wrap: wrap;
+  }
+  .add-row input, .add-row select { flex: 1; min-width: 80px; }
+
+  /* ── TABLE ── */
+  .data-table { width: 100%; border-collapse: collapse; }
+  .data-table th {
+    font-family: 'DM Mono', monospace; font-size: 11px;
+    color: var(--text-light); font-weight: 500;
+    padding: 6px 10px; text-align: left;
+    border-bottom: 1px solid var(--cream3);
+  }
+  .data-table td {
+    padding: 9px 10px; font-size: 13px;
+    border-bottom: 1px solid var(--cream2);
+    vertical-align: middle;
+  }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: var(--cream); }
+
+  /* ── CHECKBOX ── */
+  .check-circle {
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 2px solid var(--warm-gray); cursor: pointer;
+    transition: all 0.2s; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .check-circle.checked { background: var(--green); border-color: var(--green); }
+  .check-circle.checked::after { content: '✓'; color: #fff; font-size: 11px; font-weight: 700; }
+
+  /* ── INSTALLMENT DOTS ── */
+  .dots-row { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+  .dot {
+    width: 18px; height: 18px; border-radius: 50%;
+    border: 2px solid var(--warm-gray);
+    cursor: pointer; transition: all 0.2s;
+  }
+  .dot.paid { background: var(--accent); border-color: var(--accent); }
+
+  /* ── SUMMARY BAR ── */
+  .summary-bar {
+    display: flex; gap: 16px; flex-wrap: wrap;
+    padding: 14px 18px;
+    background: var(--cream2); border-radius: var(--radius-sm);
+    margin-bottom: 20px;
+  }
+  .summary-item { display: flex; flex-direction: column; gap: 2px; }
+  .summary-label { font-size: 10px; color: var(--text-light); font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.5px; }
+  .summary-value { font-size: 16px; font-weight: 600; color: var(--brown-dark); font-family: 'DM Mono', monospace; }
+  .summary-value.red { color: var(--red); }
+  .summary-value.green { color: var(--green); }
+
+  /* ── PROGRESS BAR ── */
+  .progress-bar {
+    height: 6px; background: var(--cream3); border-radius: 3px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; border-radius: 3px;
+    background: var(--accent);
+    transition: width 0.4s ease;
+  }
+  .progress-fill.over { background: var(--red); }
+
+  /* ── WEEKLY CHALLENGE ── */
+  .challenge-display {
+    text-align: center; padding: 20px;
+    background: linear-gradient(135deg, var(--cream2) 0%, #f5f0e8 100%);
+    border-radius: var(--radius);
+    border: 1.5px solid var(--cream3);
+  }
+  .challenge-amount {
+    font-family: 'DM Mono', monospace;
+    font-size: 36px; font-weight: 500;
+    color: var(--brown-dark);
+  }
+  .challenge-amount span { font-size: 18px; color: var(--text-light); }
+  .challenge-sub { font-size: 12px; color: var(--text-light); margin-top: 4px; }
+
+  /* ── WEEK TABS ── */
+  .week-tabs { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+  .week-tab {
+    padding: 6px 14px; border-radius: 20px;
+    font-size: 12px; cursor: pointer;
+    border: 1.5px solid var(--cream3);
+    background: #fff; color: var(--text-mid);
+    transition: all 0.2s;
+  }
+  .week-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* ── CATEGORY TAGS ── */
+  .cat-tag {
+    padding: 3px 9px; border-radius: 20px;
+    font-size: 11px; font-family: 'DM Mono', monospace;
+  }
+  .cat-식비 { background: #FEF3CD; color: #856404; }
+  .cat-생활 { background: #D1ECF1; color: #0C5460; }
+  .cat-기타 { background: #E2E3E5; color: #383D41; }
+  .cat-건강 { background: var(--green-light); color: var(--green); }
+  .cat-친목 { background: #FDE2E8; color: #B5374E; }
+  .cat-경조 { background: #E8D5F7; color: #6B3FA0; }
+  .cat-꾸밈 { background: #FFE8D6; color: #C05A00; }
+  .cat-행복 { background: #FFF0CC; color: #856404; }
+
+  /* ── CHART CONTAINER ── */
+  .chart-wrap {
+    position: relative; height: 220px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .chart-wrap canvas { max-height: 220px; }
+
+  /* ── EDITABLE CELL ── */
+  .editable {
+    background: none; border: none; border-bottom: 1px dashed transparent;
+    font-family: 'Noto Serif KR', serif; font-size: 13px;
+    color: var(--text); width: 100%; padding: 2px 4px;
+    cursor: text; transition: border-color 0.2s;
+  }
+  .editable:hover, .editable:focus { border-bottom-color: var(--accent-light); outline: none; background: var(--cream); border-radius: 3px; }
+
+  /* ── MEMO / GOAL ── */
+  .memo-area {
+    background: var(--cream); border: 1.5px solid var(--cream3);
+    border-radius: var(--radius-sm); padding: 12px;
+    font-size: 13px; color: var(--text-mid);
+    min-height: 80px; outline: none;
+    font-family: 'Noto Serif KR', serif;
+    width: 100%;
+    cursor: text;
+  }
+  .memo-area:focus { border-color: var(--accent-light); background: #fff; }
+  .memo-label {
+    font-size: 11px; color: var(--text-light); margin-bottom: 6px;
+    font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+
+  /* ── CHECKLIST ── */
+  .checklist-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 0; border-bottom: 1px solid var(--cream2);
+  }
+  .checklist-item:last-child { border-bottom: none; }
+  .checklist-item label { font-size: 13px; flex: 1; cursor: pointer; }
+  .checklist-item.done label { text-decoration: line-through; color: var(--text-light); }
+
+  /* ── DELETE BTN ── */
+  .del-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--warm-gray); font-size: 14px; padding: 3px 6px;
+    border-radius: 4px; transition: all 0.15s; line-height: 1;
+  }
+  .del-btn:hover { color: var(--red); background: var(--red-light); }
+
+  /* ── STAT BOXES ── */
+  .stat-boxes { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+  .stat-box {
+    flex: 1; min-width: 130px;
+    background: #fff; border-radius: var(--radius-sm);
+    padding: 14px 16px; box-shadow: var(--shadow);
+    border-left: 3px solid var(--accent);
+  }
+  .stat-box.green-border { border-left-color: var(--green); }
+  .stat-box.blue-border { border-left-color: var(--blue); }
+  .stat-box .label { font-size: 11px; color: var(--text-light); font-family: 'DM Mono', monospace; margin-bottom: 4px; }
+  .stat-box .value { font-size: 18px; font-weight: 600; font-family: 'DM Mono', monospace; color: var(--brown-dark); }
+
+  /* ── MONTH CHECKLIST TOP ── */
+  .setup-checks {
+    display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;
+  }
+  .setup-check {
+    display: flex; align-items: center; gap: 7px;
+    background: #fff; border: 1.5px solid var(--cream3);
+    border-radius: 20px; padding: 6px 14px;
+    font-size: 12px; cursor: pointer; transition: all 0.2s;
+  }
+  .setup-check .dot-check {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--cream3); transition: background 0.2s;
+  }
+  .setup-check.done { border-color: var(--green-light); background: var(--green-light); }
+  .setup-check.done .dot-check { background: var(--green); }
+  .setup-check.done span { color: var(--green); }
+
+  /* ── NUMBER FORMAT ── */
+  .num { font-family: 'DM Mono', monospace; }
+
+  /* ── DIVIDER ── */
+  .divider { height: 1px; background: var(--cream3); margin: 16px 0; }
+
+  .text-right { text-align: right; }
+  .flex-center { display: flex; align-items: center; }
+  .gap-8 { gap: 8px; }
+  .mt-8 { margin-top: 8px; }
+  .mt-12 { margin-top: 12px; }
+  .fw-600 { font-weight: 600; }
+  .text-accent { color: var(--accent); }
+  .text-green { color: var(--green); }
+  .text-red { color: var(--red); }
+  .text-light { color: var(--text-light); }
+  .fs-12 { font-size: 12px; }
+  .fs-11 { font-size: 11px; }
+
+  /* Report legend */
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-mid); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  /* Investment table */
+  .inv-row input { background: transparent; border: none; border-bottom: 1px dashed transparent; width: 100%; font-size: 12px; padding: 2px; }
+  .inv-row input:focus { outline: none; border-bottom-color: var(--accent-light); }
+
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div class="logo">돈<span>·</span>기록</div>
+    <div class="month-nav">
+      <button onclick="changeMonth(-1)">‹</button>
+      <div class="month-display" id="monthDisplay"></div>
+      <button onclick="changeMonth(1)">›</button>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('goal', this)">목표</button>
+    <button class="tab-btn" onclick="switchTab('monthly', this)">먼슬리</button>
+    <button class="tab-btn" onclick="switchTab('weekly', this)">위클리</button>
+    <button class="tab-btn" onclick="switchTab('savings', this)">저축·투자</button>
+    <button class="tab-btn" onclick="switchTab('report', this)">리포트</button>
+  </div>
+</header>
+
+<main>
+
+<!-- ════════════════════════════════
+     TAB 0: 목표
+════════════════════════════════ -->
+<div class="tab-content active" id="tab-goal">
+
+  <!-- 메인 목표 카드 -->
+  <div class="card" style="background: linear-gradient(135deg, #fff 60%, #F5F0E8 100%);">
+    <div class="card-title"><span class="icon">🎯</span> 최종 목표</div>
+
+    <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap; margin-bottom:24px;">
+      <div style="flex:1; min-width:180px;">
+        <div class="memo-label">목표 금액</div>
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+          <input type="number" id="goalTarget" value="50000000"
+            oninput="renderGoal()"
+            style="font-size:22px; font-family:'DM Mono',monospace; font-weight:700; padding:10px 14px; color:var(--brown-dark);">
+          <span style="font-size:13px; color:var(--text-light);">원</span>
+        </div>
+        <div class="memo-label" style="margin-top:10px;">목표 한마디</div>
+        <div class="memo-area" contenteditable="true" id="goalMemo"
+          data-placeholder="예) 30살 전에 5천만원 모으기 💪" style="min-height:50px;"></div>
+      </div>
+
+      <!-- 도넛 차트 -->
+      <div style="position:relative; width:200px; height:200px; flex-shrink:0; margin:0 auto;">
+        <canvas id="goalChart"></canvas>
+        <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; pointer-events:none;">
+          <div style="font-family:'DM Mono',monospace; font-size:13px; color:var(--text-light); margin-bottom:2px;">달성률</div>
+          <div style="font-family:'DM Mono',monospace; font-size:28px; font-weight:700; color:var(--brown-dark);" id="goalPct">0%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 수치 요약 -->
+    <div class="summary-bar" style="margin-bottom:0;">
+      <div class="summary-item">
+        <div class="summary-label">현재 달성</div>
+        <div class="summary-value green" id="goalCurrent">₩0</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-label">남은 금액</div>
+        <div class="summary-value red" id="goalRemain">₩50,000,000</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-label">목표까지</div>
+        <div class="summary-value" id="goalMonthsLeft" style="color:var(--blue);">–</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 가로 프로그레스 바 -->
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <div class="card-title" style="margin-bottom:0;"><span class="icon">📊</span> 목표 진행도</div>
+      <div style="font-family:'DM Mono',monospace; font-size:12px; color:var(--text-light);" id="goalBarLabel">₩0 / ₩50,000,000</div>
+    </div>
+    <div style="height:28px; background:var(--cream3); border-radius:14px; overflow:hidden; position:relative;">
+      <div id="goalBarFill" style="height:100%; width:0%; background:linear-gradient(90deg, var(--accent) 0%, #E8A87C 100%); border-radius:14px; transition:width 0.6s cubic-bezier(.4,0,.2,1); position:relative;">
+        <div style="position:absolute; right:10px; top:50%; transform:translateY(-50%); font-family:'DM Mono',monospace; font-size:11px; color:#fff; font-weight:600; white-space:nowrap;" id="goalBarPct"></div>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:space-between; margin-top:6px; font-family:'DM Mono',monospace; font-size:10px; color:var(--text-light);">
+      <span>₩0</span><span>₩1,000만</span><span>₩2,000만</span><span>₩3,000만</span><span>₩4,000만</span><span>₩5,000만</span>
+    </div>
+  </div>
+
+  <!-- 저축 & 투자 내역 입력 -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title"><span class="icon">🏦</span> 현재 저축 총액</div>
+      <div style="margin-bottom:12px;">
+        <input type="number" id="goalSavAmt" placeholder="현재 저축액 입력" oninput="renderGoal()"
+          style="font-size:18px; font-family:'DM Mono',monospace; font-weight:600; padding:10px 14px;">
+      </div>
+      <div id="goalSavList"></div>
+      <div class="add-row" style="margin-top:8px;">
+        <input type="text" id="goalSavName" placeholder="항목명 (예: 청년도약계좌)" style="flex:2;">
+        <input type="number" id="goalSavItemAmt" placeholder="금액">
+        <button class="btn btn-primary btn-sm" onclick="addGoalItem('sav')">추가</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="icon">📈</span> 현재 투자 총액</div>
+      <div style="margin-bottom:12px;">
+        <input type="number" id="goalInvAmt" placeholder="현재 투자 평가금액 입력" oninput="renderGoal()"
+          style="font-size:18px; font-family:'DM Mono',monospace; font-weight:600; padding:10px 14px;">
+      </div>
+      <div id="goalInvList"></div>
+      <div class="add-row" style="margin-top:8px;">
+        <input type="text" id="goalInvName" placeholder="항목명 (예: S&P500 ETF)" style="flex:2;">
+        <input type="number" id="goalInvItemAmt" placeholder="금액">
+        <button class="btn btn-primary btn-sm" onclick="addGoalItem('inv')">추가</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 월 목표 저축액 계산기 -->
+  <div class="card">
+    <div class="card-title"><span class="icon">🧮</span> 목표 달성 계산기</div>
+    <div style="display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap;">
+      <div style="flex:1; min-width:140px;">
+        <div class="memo-label">목표 달성 기간 (개월)</div>
+        <input type="number" id="goalMonths" placeholder="예: 24" oninput="calcGoalMonthly()"
+          style="padding:8px 12px;">
+      </div>
+      <div style="flex:1; min-width:140px;">
+        <div class="memo-label">월 저축 필요액</div>
+        <div style="font-family:'DM Mono',monospace; font-size:22px; font-weight:700; color:var(--accent); padding:8px 0;" id="goalMonthlyNeeded">–</div>
+      </div>
+      <div style="flex:2; min-width:180px; font-size:12px; color:var(--text-light); line-height:1.8; padding-bottom:8px;" id="goalCalcDesc"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ════════════════════════════════
+     TAB 1: 먼슬리
+════════════════════════════════ -->
+<div class="tab-content" id="tab-monthly">
+
+  <!-- 월초 셋업 체크 -->
+  <div class="setup-checks" id="setupChecks">
+    <div class="setup-check" onclick="toggleSetup(this)"><div class="dot-check"></div><span>수입 입력</span></div>
+    <div class="setup-check" onclick="toggleSetup(this)"><div class="dot-check"></div><span>고정지출 확인</span></div>
+    <div class="setup-check" onclick="toggleSetup(this)"><div class="dot-check"></div><span>주간 예산 설정</span></div>
+    <div class="setup-check" onclick="toggleSetup(this)"><div class="dot-check"></div><span>저축 목표 확인</span></div>
+  </div>
+
+  <!-- 수입 & 배분 -->
+  <div class="card">
+    <div class="card-title"><span class="icon">💵</span> 이번 달 수입</div>
+    <div class="grid-2">
+      <div>
+        <div class="memo-label">총 수입</div>
+        <input type="number" id="totalIncome" placeholder="0" oninput="updateSummary()" style="font-size:20px; font-family:'DM Mono',monospace; font-weight:600; padding:10px 14px;">
+      </div>
+      <div>
+        <div class="memo-label">수입 배분 메모</div>
+        <div class="memo-area" contenteditable="true" id="incomeMemo" style="min-height:60px;"
+          data-placeholder="예) 적금 30만 / 투자 20만 / 생활비 15만 / 목적저축 10만"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 요약 바 -->
+  <div class="summary-bar">
+    <div class="summary-item">
+      <div class="summary-label">수입</div>
+      <div class="summary-value" id="sum-income">0</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-label">고정지출</div>
+      <div class="summary-value red" id="sum-fixed">0</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-label">할부합계</div>
+      <div class="summary-value red" id="sum-install">0</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-label">잔여 예산</div>
+      <div class="summary-value green" id="sum-remain">0</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+
+    <!-- 고정지출 -->
+    <div class="card">
+      <div class="card-title"><span class="icon">📌</span> 고정지출</div>
+      <table class="data-table" id="fixedTable">
+        <thead><tr>
+          <th>항목</th><th>금액</th><th>납부</th><th></th>
+        </tr></thead>
+        <tbody id="fixedBody"></tbody>
+      </table>
+      <div class="add-row">
+        <input type="text" id="fixedName" placeholder="항목명" style="flex:2;">
+        <input type="number" id="fixedAmt" placeholder="금액">
+        <button class="btn btn-primary btn-sm" onclick="addFixed()">추가</button>
+      </div>
+    </div>
+
+    <!-- 할부 -->
+    <div class="card">
+      <div class="card-title"><span class="icon">🔄</span> 할부 현황</div>
+      <div id="installBody"></div>
+      <div class="add-row" style="flex-wrap:wrap;">
+        <input type="text" id="instName" placeholder="항목명" style="flex:2;">
+        <input type="number" id="instAmt" placeholder="월 금액">
+        <input type="number" id="instTotal" placeholder="총 회차" style="width:70px;">
+        <button class="btn btn-primary btn-sm" onclick="addInstall()">추가</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 예상 지출 메모 -->
+  <div class="card">
+    <div class="card-title"><span class="icon">📋</span> 이번 달 예상 지출 & 특이사항</div>
+    <div class="memo-area" contenteditable="true" data-placeholder="예) 친구 생일 3만 / 치과 예약 / 뷰티 이벤트..."></div>
+  </div>
+
+</div>
+
+
+<!-- ════════════════════════════════
+     TAB 2: 위클리
+════════════════════════════════ -->
+<div class="tab-content" id="tab-weekly">
+
+  <!-- 주간 예산 설정 -->
+  <div class="card">
+    <div class="card-title"><span class="icon">🎯</span> 주간 챌린지 예산</div>
+    <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+      <div style="flex:1; min-width:160px;">
+        <div class="memo-label">주간 한도</div>
+        <input type="number" id="weeklyBudget" placeholder="50000" oninput="updateWeeklyChallenge()" style="font-size:18px; font-family:'DM Mono',monospace; padding:10px 14px;">
+      </div>
+      <div class="challenge-display" style="flex:2; min-width:200px;">
+        <div class="challenge-sub">이번 주 남은 금액</div>
+        <div class="challenge-amount"><span>₩</span><span id="weeklyRemain">0</span></div>
+        <div class="mt-8"><div class="progress-bar"><div class="progress-fill" id="weeklyProgressFill" style="width:100%"></div></div></div>
+        <div class="challenge-sub mt-8" id="weeklySpentLabel">지출 ₩0 / 예산 ₩0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 주차 선택 -->
+  <div class="week-tabs" id="weekTabs">
+    <div class="week-tab active" onclick="switchWeek(1,this)">1주차</div>
+    <div class="week-tab" onclick="switchWeek(2,this)">2주차</div>
+    <div class="week-tab" onclick="switchWeek(3,this)">3주차</div>
+    <div class="week-tab" onclick="switchWeek(4,this)">4주차</div>
+    <div class="week-tab" onclick="switchWeek(5,this)">5주차</div>
+  </div>
+
+  <!-- 지출 입력 -->
+  <div class="card">
+    <div class="card-title"><span class="icon">📝</span> 지출 입력</div>
+    <table class="data-table" id="expenseTable">
+      <thead><tr>
+        <th>날짜</th><th>항목</th><th>카테고리</th><th>금액</th><th></th>
+      </tr></thead>
+      <tbody id="expenseBody"></tbody>
+    </table>
+    <div class="add-row">
+      <input type="date" id="expDate" style="flex:1.5;">
+      <input type="text" id="expName" placeholder="항목" style="flex:2;">
+      <select id="expCat" style="flex:1.2;">
+        <option value="식비">식비</option>
+        <option value="생활">생활</option>
+        <option value="기타">기타</option>
+        <option value="건강">건강</option>
+        <option value="친목">친목</option>
+        <option value="경조">경조</option>
+        <option value="꾸밈">꾸밈</option>
+        <option value="행복">행복</option>
+      </select>
+      <input type="number" id="expAmt" placeholder="금액" style="flex:1;">
+      <button class="btn btn-primary btn-sm" onclick="addExpense()">추가</button>
+    </div>
+  </div>
+
+  <!-- 위클리 회고 -->
+  <div class="card">
+    <div class="card-title"><span class="icon">💬</span> 위클리 회고</div>
+    <div class="grid-2">
+      <div>
+        <div class="stat-boxes" style="margin-bottom:14px;">
+          <div class="stat-box">
+            <div class="label">이번 주 지출</div>
+            <div class="value" id="weekTotalSpent">₩0</div>
+          </div>
+          <div class="stat-box green-border">
+            <div class="label">예산 대비 남은 금액</div>
+            <div class="value" id="weekRemainStat">₩0</div>
+          </div>
+        </div>
+        <div class="memo-label">추가 저축 (남은 예산 → 저축)</div>
+        <input type="number" id="extraSavings" placeholder="0" style="margin-bottom:10px;">
+      </div>
+      <div>
+        <div class="memo-label">멍청비용 💸</div>
+        <div class="memo-area" contenteditable="true" data-placeholder="아깝게 쓴 돈, 충동구매 기록..."></div>
+        <div class="memo-label mt-8">이번 주 총평</div>
+        <div class="memo-area" contenteditable="true" data-placeholder="이번 주는 어땠어?"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ════════════════════════════════
+     TAB 3: 저축·투자
+════════════════════════════════ -->
+<div class="tab-content" id="tab-savings">
+
+  <div class="grid-2">
+
+    <!-- 적금 목록 -->
+    <div class="card">
+      <div class="card-title"><span class="icon">🏦</span> 적금 목록</div>
+      <table class="data-table">
+        <thead><tr><th>납입일</th><th>은행</th><th>금리</th><th>납입액</th><th></th></tr></thead>
+        <tbody id="savingBody"></tbody>
+      </table>
+      <div class="add-row">
+        <input type="text" id="savDate" placeholder="매월 N일" style="flex:1;">
+        <input type="text" id="savBank" placeholder="은행" style="flex:1.5;">
+        <input type="text" id="savRate" placeholder="금리%" style="flex:0.8;">
+        <input type="number" id="savAmt" placeholder="금액" style="flex:1.2;">
+        <button class="btn btn-primary btn-sm" onclick="addSaving()">추가</button>
+      </div>
+      <div class="divider"></div>
+      <div class="memo-label">월별 순수 적금 기록</div>
+      <table class="data-table" id="savingLogTable">
+        <thead><tr><th>월</th><th>총 납입</th><th>추가 저축</th><th>합계</th></tr></thead>
+        <tbody id="savingLogBody"></tbody>
+      </table>
+    </div>
+
+    <!-- 목적저축 -->
+    <div class="card">
+      <div class="card-title"><span class="icon">🎁</span> 목적저축</div>
+      <div id="purposeSavBody"></div>
+      <div class="add-row">
+        <select id="purposeCat">
+          <option>건강</option><option>친목</option><option>경조</option>
+          <option>꾸밈</option><option>행복</option><option>기타</option>
+        </select>
+        <input type="number" id="purposeAmt" placeholder="금액">
+        <button class="btn btn-primary btn-sm" onclick="addPurposeSav()">추가</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 투자 -->
+  <div class="card">
+    <div class="card-title"><span class="icon">📈</span> 투자 기록</div>
+    <table class="data-table">
+      <thead><tr>
+        <th>날짜</th><th>계좌명</th><th>매입금액</th><th>주수</th>
+        <th>현재 평가금액</th><th>수익률</th><th></th>
+      </tr></thead>
+      <tbody id="investBody"></tbody>
+    </table>
+    <div class="add-row">
+      <input type="date" id="invDate" style="flex:1.2;">
+      <input type="text" id="invName" placeholder="계좌/종목명" style="flex:2;">
+      <input type="number" id="invBuy" placeholder="매입금액" style="flex:1.2;">
+      <input type="number" id="invShares" placeholder="주수" style="flex:0.8;">
+      <button class="btn btn-primary btn-sm" onclick="addInvest()">추가</button>
+    </div>
+    <div style="margin-top:10px; font-size:12px; color:var(--text-light);">
+      💡 현재 평가금액을 주별로 직접 입력하면 수익률이 자동 계산돼요.
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ════════════════════════════════
+     TAB 4: 리포트
+════════════════════════════════ -->
+<div class="tab-content" id="tab-report">
+
+  <!-- 통계 박스 -->
+  <div class="stat-boxes">
+    <div class="stat-box">
+      <div class="label">총 수입</div>
+      <div class="value" id="rep-income">₩0</div>
+    </div>
+    <div class="stat-box">
+      <div class="label">총 지출</div>
+      <div class="value" id="rep-expense">₩0</div>
+    </div>
+    <div class="stat-box green-border">
+      <div class="label">총 저축</div>
+      <div class="value" id="rep-saving">₩0</div>
+    </div>
+    <div class="stat-box blue-border">
+      <div class="label">저축률</div>
+      <div class="value" id="rep-rate">0%</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+
+    <!-- 지출 카테고리 도넛 -->
+    <div class="card">
+      <div class="card-title"><span class="icon">🍩</span> 지출 카테고리</div>
+      <div class="chart-wrap"><canvas id="catChart"></canvas></div>
+      <div class="legend" id="catLegend"></div>
+    </div>
+
+    <!-- 수입 배분 도넛 -->
+    <div class="card">
+      <div class="card-title"><span class="icon">💰</span> 수입 배분</div>
+      <div class="chart-wrap"><canvas id="distChart"></canvas></div>
+      <div class="legend" id="distLegend"></div>
+    </div>
+
+  </div>
+
+  <!-- 월별 지출 막대 -->
+  <div class="card">
+    <div class="card-title"><span class="icon">📊</span> 월별 지출 추이</div>
+    <div class="chart-wrap" style="height:200px;"><canvas id="barChart"></canvas></div>
+  </div>
+
+  <!-- 다음 달 목표 -->
+  <div class="card">
+    <div class="card-title"><span class="icon">🌱</span> 이번 달 회고 & 다음 달 목표</div>
+    <div class="grid-2">
+      <div>
+        <div class="memo-label">이번 달 총평</div>
+        <div class="memo-area" contenteditable="true" data-placeholder="이번 달 잘한 점, 아쉬운 점..."></div>
+      </div>
+      <div>
+        <div class="memo-label">다음 달 목표</div>
+        <div class="memo-area" contenteditable="true" data-placeholder="다음 달 소비 목표, 챌린지..."></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</main>
+
+<script>
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+let state = {
+  currentYear: new Date().getFullYear(),
+  currentMonth: new Date().getMonth() + 1,
+  currentWeek: 1,
+  months: {}
+};
+
+function getMonthKey() {
+  return `${state.currentYear}-${String(state.currentMonth).padStart(2,'0')}`;
+}
+
+function getMonthData() {
+  const k = getMonthKey();
+  if (!state.months[k]) {
+    state.months[k] = {
+      income: 0,
+      fixed: [
+        { name: '보험', amt: 115000, paid: false },
+        { name: '정수기', amt: 27900, paid: false },
+        { name: '통신비', amt: 100000, paid: false },
+        { name: '시온이', amt: 4500, paid: false },
+        { name: '듀오링고', amt: 3200, paid: false },
+        { name: '스픽', amt: 14200, paid: false },
+        { name: '티빙', amt: 8990, paid: false },
+        { name: '주유', amt: 80000, paid: false },
+      ],
+      install: [
+        { name: '청소용품', monthly: 52370, total: 3, paid: 0 },
+        { name: '러쉬', monthly: 55894, total: 2, paid: 0 },
+        { name: '필테', monthly: 110000, total: 9, paid: 0 },
+        { name: '피아노', monthly: 160000, total: 6, paid: 0 },
+      ],
+      expenses: { 1:[], 2:[], 3:[], 4:[], 5:[] },
+      weeklyBudget: 50000,
+      extraSavings: { 1:0, 2:0, 3:0, 4:0, 5:0 },
+      savings: [],
+      invest: [],
+      purposeSav: []
+    };
+  }
+  return state.months[k];
+}
+
+// ═══════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════
+function fmt(n) {
+  if (!n && n !== 0) return '0';
+  return Math.round(n).toLocaleString('ko-KR');
+}
+
+function parseNum(v) {
+  const n = parseFloat(String(v).replace(/,/g,''));
+  return isNaN(n) ? 0 : n;
+}
+
+// ═══════════════════════════════════════
+// MONTH NAV
+// ═══════════════════════════════════════
+function updateMonthDisplay() {
+  document.getElementById('monthDisplay').textContent =
+    `${state.currentYear}.${String(state.currentMonth).padStart(2,'0')}`;
+}
+
+function changeMonth(d) {
+  state.currentMonth += d;
+  if (state.currentMonth > 12) { state.currentMonth = 1; state.currentYear++; }
+  if (state.currentMonth < 1) { state.currentMonth = 12; state.currentYear--; }
+  updateMonthDisplay();
+  renderAll();
+}
+
+// ═══════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+  if (id === 'report') renderReport();
+}
+
+// ═══════════════════════════════════════
+// SETUP CHECKS
+// ═══════════════════════════════════════
+function toggleSetup(el) {
+  el.classList.toggle('done');
+}
+
+// ═══════════════════════════════════════
+// MONTHLY - FIXED
+// ═══════════════════════════════════════
+function renderFixed() {
+  const d = getMonthData();
+  const tbody = document.getElementById('fixedBody');
+  tbody.innerHTML = '';
+  d.fixed.forEach((item, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input class="editable" value="${item.name}" onchange="d.fixed[${i}].name=this.value; updateSummary();"></td>
+      <td><input class="editable num" value="${fmt(item.amt)}" onchange="d.fixed[${i}].amt=parseNum(this.value); updateSummary();" style="text-align:right;"></td>
+      <td>
+        <div class="check-circle ${item.paid?'checked':''}" onclick="d.fixed[${i}].paid=!d.fixed[${i}].paid; renderFixed();"></div>
+      </td>
+      <td><button class="del-btn" onclick="deleteFixed(${i})">×</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  updateSummary();
+}
+
+function addFixed() {
+  const n = document.getElementById('fixedName').value.trim();
+  const a = parseNum(document.getElementById('fixedAmt').value);
+  if (!n || !a) return;
+  getMonthData().fixed.push({ name: n, amt: a, paid: false });
+  document.getElementById('fixedName').value = '';
+  document.getElementById('fixedAmt').value = '';
+  renderFixed();
+}
+
+function deleteFixed(i) {
+  getMonthData().fixed.splice(i, 1);
+  renderFixed();
+}
+
+// ═══════════════════════════════════════
+// MONTHLY - INSTALLMENT
+// ═══════════════════════════════════════
+function renderInstall() {
+  const d = getMonthData();
+  const container = document.getElementById('installBody');
+  container.innerHTML = '';
+  d.install.forEach((item, i) => {
+    const div = document.createElement('div');
+    div.style.cssText = 'padding: 10px 0; border-bottom: 1px solid var(--cream2);';
+
+    let dots = '';
+    for (let j = 0; j < item.total; j++) {
+      dots += `<div class="dot ${j < item.paid ? 'paid' : ''}" onclick="toggleInstallDot(${i},${j})"></div>`;
+    }
+
+    div.innerHTML = `
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input class="editable" value="${item.name}" onchange="getMonthData().install[${i}].name=this.value;" style="font-weight:600; font-size:13px; width:auto;">
+          <span class="badge badge-brown num">${fmt(item.monthly)}원/월</span>
+          <span class="text-light fs-11 num">${item.paid}/${item.total}회</span>
+        </div>
+        <button class="del-btn" onclick="deleteInstall(${i})">×</button>
+      </div>
+      <div class="dots-row">${dots}</div>
+    `;
+    container.appendChild(div);
+  });
+  updateSummary();
+}
+
+function toggleInstallDot(itemIdx, dotIdx) {
+  const item = getMonthData().install[itemIdx];
+  item.paid = dotIdx < item.paid ? dotIdx : dotIdx + 1;
+  renderInstall();
+}
+
+function addInstall() {
+  const n = document.getElementById('instName').value.trim();
+  const a = parseNum(document.getElementById('instAmt').value);
+  const t = parseInt(document.getElementById('instTotal').value) || 1;
+  if (!n || !a) return;
+  getMonthData().install.push({ name: n, monthly: a, total: t, paid: 0 });
+  document.getElementById('instName').value = '';
+  document.getElementById('instAmt').value = '';
+  document.getElementById('instTotal').value = '';
+  renderInstall();
+}
+
+function deleteInstall(i) {
+  getMonthData().install.splice(i, 1);
+  renderInstall();
+}
+
+// ═══════════════════════════════════════
+// SUMMARY
+// ═══════════════════════════════════════
+function updateSummary() {
+  const d = getMonthData();
+  const income = parseNum(document.getElementById('totalIncome').value) || d.income;
+  d.income = income;
+
+  const fixedTotal = d.fixed.reduce((s, x) => s + x.amt, 0);
+  const installTotal = d.install.reduce((s, x) => s + x.monthly, 0);
+  const remain = income - fixedTotal - installTotal;
+
+  document.getElementById('sum-income').textContent = fmt(income);
+  document.getElementById('sum-fixed').textContent = fmt(fixedTotal);
+  document.getElementById('sum-install').textContent = fmt(installTotal);
+  document.getElementById('sum-remain').textContent = fmt(remain);
+  document.getElementById('sum-remain').className = 'summary-value ' + (remain >= 0 ? 'green' : 'red');
+}
+
+// ═══════════════════════════════════════
+// WEEKLY
+// ═══════════════════════════════════════
+function switchWeek(w, btn) {
+  state.currentWeek = w;
+  document.querySelectorAll('.week-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderExpenses();
+  updateWeeklyChallenge();
+}
+
+function renderExpenses() {
+  const d = getMonthData();
+  const w = state.currentWeek;
+  const tbody = document.getElementById('expenseBody');
+  tbody.innerHTML = '';
+  (d.expenses[w] || []).forEach((exp, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="num fs-12">${exp.date}</td>
+      <td>${exp.name}</td>
+      <td><span class="cat-tag cat-${exp.cat}">${exp.cat}</span></td>
+      <td class="text-right num">${fmt(exp.amt)}</td>
+      <td><button class="del-btn" onclick="deleteExpense(${w},${i})">×</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  updateWeeklyChallenge();
+}
+
+function addExpense() {
+  const date = document.getElementById('expDate').value;
+  const name = document.getElementById('expName').value.trim();
+  const cat = document.getElementById('expCat').value;
+  const amt = parseNum(document.getElementById('expAmt').value);
+  if (!name || !amt) return;
+  const w = state.currentWeek;
+  const d = getMonthData();
+  if (!d.expenses[w]) d.expenses[w] = [];
+  d.expenses[w].push({ date: date || '–', name, cat, amt });
+  document.getElementById('expName').value = '';
+  document.getElementById('expAmt').value = '';
+  renderExpenses();
+}
+
+function deleteExpense(w, i) {
+  getMonthData().expenses[w].splice(i, 1);
+  renderExpenses();
+}
+
+function updateWeeklyChallenge() {
+  const d = getMonthData();
+  const budget = parseNum(document.getElementById('weeklyBudget').value) || d.weeklyBudget || 50000;
+  d.weeklyBudget = budget;
+  const w = state.currentWeek;
+  const spent = (d.expenses[w] || []).reduce((s, x) => s + x.amt, 0);
+  const remain = budget - spent;
+  const pct = Math.max(0, Math.min(100, (remain / budget) * 100));
+
+  document.getElementById('weeklyRemain').textContent = fmt(Math.abs(remain));
+  document.getElementById('weeklySpentLabel').textContent = `지출 ₩${fmt(spent)} / 예산 ₩${fmt(budget)}`;
+
+  const fill = document.getElementById('weeklyProgressFill');
+  fill.style.width = pct + '%';
+  fill.className = 'progress-fill' + (remain < 0 ? ' over' : '');
+
+  const remainStat = document.getElementById('weekRemainStat');
+  remainStat.textContent = '₩' + fmt(remain);
+  remainStat.style.color = remain >= 0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('weekTotalSpent').textContent = '₩' + fmt(spent);
+}
+
+// ═══════════════════════════════════════
+// SAVINGS
+// ═══════════════════════════════════════
+function renderSavings() {
+  const d = getMonthData();
+  const tbody = document.getElementById('savingBody');
+  tbody.innerHTML = '';
+  d.savings.forEach((s, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${s.date}</td><td>${s.bank}</td>
+      <td class="num">${s.rate}%</td>
+      <td class="num">${fmt(s.amt)}</td>
+      <td><button class="del-btn" onclick="deleteSaving(${i})">×</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  renderSavingLog();
+}
+
+function addSaving() {
+  const d = getMonthData();
+  d.savings.push({
+    date: document.getElementById('savDate').value,
+    bank: document.getElementById('savBank').value,
+    rate: document.getElementById('savRate').value,
+    amt: parseNum(document.getElementById('savAmt').value)
+  });
+  ['savDate','savBank','savRate','savAmt'].forEach(id => document.getElementById(id).value = '');
+  renderSavings();
+}
+
+function deleteSaving(i) { getMonthData().savings.splice(i,1); renderSavings(); }
+
+function renderSavingLog() {
+  const tbody = document.getElementById('savingLogBody');
+  tbody.innerHTML = '';
+  const months = Object.keys(state.months).sort();
+  months.forEach(mk => {
+    const md = state.months[mk];
+    const base = md.savings.reduce((s, x) => s + x.amt, 0);
+    const extra = Object.values(md.extraSavings || {}).reduce((s,x) => s+parseNum(x), 0);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${mk}</td><td class="num">${fmt(base)}</td><td class="num text-green">${fmt(extra)}</td><td class="num fw-600">${fmt(base+extra)}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// PURPOSE SAV
+function renderPurposeSav() {
+  const d = getMonthData();
+  const container = document.getElementById('purposeSavBody');
+  container.innerHTML = '';
+  const cats = {};
+  d.purposeSav.forEach(p => { cats[p.cat] = (cats[p.cat]||0) + p.amt; });
+  Object.entries(cats).forEach(([cat, total]) => {
+    const div = document.createElement('div');
+    div.className = 'checklist-item';
+    div.innerHTML = `
+      <span class="cat-tag cat-${cat}">${cat}</span>
+      <span style="flex:1; font-size:13px; padding-left:8px;">₩${fmt(total)}</span>
+    `;
+    container.appendChild(div);
+  });
+  if (d.purposeSav.length === 0) {
+    container.innerHTML = '<div style="font-size:12px; color:var(--text-light); padding:8px 0;">목적저축을 추가해보세요.</div>';
+  }
+}
+
+function addPurposeSav() {
+  const d = getMonthData();
+  const cat = document.getElementById('purposeCat').value;
+  const amt = parseNum(document.getElementById('purposeAmt').value);
+  if (!amt) return;
+  d.purposeSav.push({ cat, amt });
+  document.getElementById('purposeAmt').value = '';
+  renderPurposeSav();
+}
+
+// INVEST
+function renderInvest() {
+  const d = getMonthData();
+  const tbody = document.getElementById('investBody');
+  tbody.innerHTML = '';
+  d.invest.forEach((inv, i) => {
+    const rate = inv.buy > 0 ? (((inv.current - inv.buy) / inv.buy) * 100).toFixed(1) : '–';
+    const rateColor = parseFloat(rate) >= 0 ? 'var(--green)' : 'var(--red)';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="fs-12">${inv.date}</td>
+      <td>${inv.name}</td>
+      <td class="num">${fmt(inv.buy)}</td>
+      <td class="num">${inv.shares}</td>
+      <td>
+        <input class="editable num" value="${inv.current || ''}" placeholder="입력"
+          onchange="getMonthData().invest[${i}].current=parseNum(this.value); renderInvest();"
+          style="width:90px; text-align:right;">
+      </td>
+      <td style="color:${rateColor}; font-family:'DM Mono',monospace; font-weight:600;">${rate !== '–' ? rate + '%' : '–'}</td>
+      <td><button class="del-btn" onclick="deleteInvest(${i})">×</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function addInvest() {
+  const d = getMonthData();
+  d.invest.push({
+    date: document.getElementById('invDate').value || '–',
+    name: document.getElementById('invName').value,
+    buy: parseNum(document.getElementById('invBuy').value),
+    shares: parseNum(document.getElementById('invShares').value),
+    current: 0
+  });
+  ['invDate','invName','invBuy','invShares'].forEach(id => document.getElementById(id).value='');
+  renderInvest();
+}
+
+function deleteInvest(i) { getMonthData().invest.splice(i,1); renderInvest(); }
+
+// ═══════════════════════════════════════
+// REPORT
+// ═══════════════════════════════════════
+let charts = {};
+
+function renderReport() {
+  const d = getMonthData();
+
+  // 전체 지출
+  const allExp = Object.values(d.expenses).flat();
+  const totalExp = allExp.reduce((s,x) => s+x.amt, 0);
+  const totalSav = d.savings.reduce((s,x) => s+x.amt, 0);
+  const totalInv = d.invest.reduce((s,x) => s+x.buy, 0);
+  const rate = d.income > 0 ? Math.round((totalSav / d.income) * 100) : 0;
+
+  document.getElementById('rep-income').textContent = '₩' + fmt(d.income);
+  document.getElementById('rep-expense').textContent = '₩' + fmt(totalExp);
+  document.getElementById('rep-saving').textContent = '₩' + fmt(totalSav);
+  document.getElementById('rep-rate').textContent = rate + '%';
+
+  // 카테고리 집계
+  const cats = {};
+  allExp.forEach(e => { cats[e.cat] = (cats[e.cat]||0) + e.amt; });
+  const catColors = {
+    '식비':'#F5C842','생활':'#5BB8C5','기타':'#A0A0A0',
+    '건강':'#7A9E7E','친목':'#E87070','경조':'#9B6FC4',
+    '꾸밈':'#E8923A','행복':'#F0C040'
+  };
+
+  // Cat donut
+  if (charts.cat) charts.cat.destroy();
+  const catEntries = Object.entries(cats);
+  if (catEntries.length > 0) {
+    charts.cat = new Chart(document.getElementById('catChart'), {
+      type: 'doughnut',
+      data: {
+        labels: catEntries.map(([k]) => k),
+        datasets: [{ data: catEntries.map(([,v]) => v),
+          backgroundColor: catEntries.map(([k]) => catColors[k] || '#ccc'),
+          borderWidth: 2, borderColor: '#fff' }]
+      },
+      options: { cutout: '65%', plugins: { legend: { display: false } }, animation: { animateScale: true } }
+    });
+    const legend = document.getElementById('catLegend');
+    legend.innerHTML = catEntries.map(([k,v]) =>
+      `<div class="legend-item"><div class="legend-dot" style="background:${catColors[k]}"></div>${k} <span class="num" style="color:var(--text-light)">₩${fmt(v)}</span></div>`
+    ).join('');
+  }
+
+  // Dist donut (수입 배분)
+  if (charts.dist) charts.dist.destroy();
+  const distData = [
+    ['지출', totalExp, '#E8923A'],
+    ['적금', totalSav, '#7A9E7E'],
+    ['투자', totalInv, '#5A7FA0'],
+    ['잔여', Math.max(0, d.income - totalExp - totalSav - totalInv), '#D4CAB8'],
+  ].filter(([,v]) => v > 0);
+
+  if (distData.length > 0) {
+    charts.dist = new Chart(document.getElementById('distChart'), {
+      type: 'doughnut',
+      data: {
+        labels: distData.map(([k]) => k),
+        datasets: [{ data: distData.map(([,v]) => v),
+          backgroundColor: distData.map(([,,c]) => c),
+          borderWidth: 2, borderColor: '#fff' }]
+      },
+      options: { cutout: '65%', plugins: { legend: { display: false } }, animation: { animateScale: true } }
+    });
+    document.getElementById('distLegend').innerHTML = distData.map(([k,v,c]) =>
+      `<div class="legend-item"><div class="legend-dot" style="background:${c}"></div>${k} <span class="num" style="color:var(--text-light)">₩${fmt(v)}</span></div>`
+    ).join('');
+  }
+
+  // Monthly bar
+  if (charts.bar) charts.bar.destroy();
+  const monthKeys = Object.keys(state.months).sort().slice(-6);
+  const barData = monthKeys.map(mk => {
+    const md = state.months[mk];
+    return Object.values(md.expenses).flat().reduce((s,x) => s+x.amt, 0);
+  });
+  charts.bar = new Chart(document.getElementById('barChart'), {
+    type: 'bar',
+    data: {
+      labels: monthKeys.map(mk => mk.slice(5) + '월'),
+      datasets: [{
+        label: '지출',
+        data: barData,
+        backgroundColor: 'rgba(193,125,82,0.7)',
+        borderColor: 'rgba(193,125,82,1)',
+        borderWidth: 1.5,
+        borderRadius: 6
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { ticks: { callback: v => '₩'+fmt(v), font: { family: "'DM Mono'" } }, grid: { color: '#F0EBE3' } },
+        x: { ticks: { font: { family: "'DM Mono'" } }, grid: { display: false } }
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════════
+// GOAL TAB
+// ═══════════════════════════════════════
+let goalState = {
+  savItems: [],
+  invItems: []
+};
+let goalChart = null;
+
+function renderGoal() {
+  const target = parseNum(document.getElementById('goalTarget').value) || 50000000;
+
+  // 직접 입력한 총액 OR 항목 합산
+  const manualSav = parseNum(document.getElementById('goalSavAmt').value);
+  const manualInv = parseNum(document.getElementById('goalInvAmt').value);
+  const itemSav = goalState.savItems.reduce((s, x) => s + x.amt, 0);
+  const itemInv = goalState.invItems.reduce((s, x) => s + x.amt, 0);
+  const totalSav = manualSav || itemSav;
+  const totalInv = manualInv || itemInv;
+  const current = totalSav + totalInv;
+  const remain = Math.max(0, target - current);
+  const pct = target > 0 ? Math.min(100, (current / target) * 100) : 0;
+
+  // 수치 업데이트
+  document.getElementById('goalCurrent').textContent = '₩' + fmt(current);
+  document.getElementById('goalRemain').textContent = '₩' + fmt(remain);
+  document.getElementById('goalPct').textContent = pct.toFixed(1) + '%';
+
+  // 월 저축 기준 남은 기간 추정 (저축탭 데이터 활용)
+  const d = getMonthData();
+  const monthlySav = d.savings.reduce((s, x) => s + x.amt, 0);
+  if (monthlySav > 0 && remain > 0) {
+    const months = Math.ceil(remain / monthlySav);
+    const years = Math.floor(months / 12);
+    const mo = months % 12;
+    document.getElementById('goalMonthsLeft').textContent =
+      years > 0 ? `약 ${years}년 ${mo}개월` : `약 ${mo}개월`;
+  } else {
+    document.getElementById('goalMonthsLeft').textContent = remain <= 0 ? '🎉 달성!' : '–';
+  }
+
+  // 가로 바
+  document.getElementById('goalBarFill').style.width = pct + '%';
+  document.getElementById('goalBarLabel').textContent = `₩${fmt(current)} / ₩${fmt(target)}`;
+  document.getElementById('goalBarPct').textContent = pct >= 5 ? pct.toFixed(1) + '%' : '';
+
+  // 도넛 차트
+  if (goalChart) goalChart.destroy();
+  const savColor = '#7A9E7E';
+  const invColor = '#5A7FA0';
+  const emptyColor = '#EAE4D9';
+
+  const chartData = current > 0
+    ? [
+        { label: '저축', value: totalSav, color: savColor },
+        { label: '투자', value: totalInv, color: invColor },
+        { label: '남은 금액', value: remain, color: emptyColor },
+      ].filter(x => x.value > 0)
+    : [{ label: '미달성', value: target, color: emptyColor }];
+
+  goalChart = new Chart(document.getElementById('goalChart'), {
+    type: 'doughnut',
+    data: {
+      labels: chartData.map(x => x.label),
+      datasets: [{
+        data: chartData.map(x => x.value),
+        backgroundColor: chartData.map(x => x.color),
+        borderWidth: 3, borderColor: '#fff'
+      }]
+    },
+    options: {
+      cutout: '72%',
+      plugins: { legend: { display: false }, tooltip: {
+        callbacks: { label: ctx => ` ${ctx.label}: ₩${fmt(ctx.raw)}` }
+      }},
+      animation: { animateScale: true }
+    }
+  });
+
+  calcGoalMonthly();
+  renderGoalItems();
+}
+
+function renderGoalItems() {
+  const renderList = (items, containerId, type) => {
+    const el = document.getElementById(containerId);
+    el.innerHTML = items.map((item, i) => `
+      <div style="display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--cream2);">
+        <span style="font-size:12px; flex:1; color:var(--text-mid);">${item.name}</span>
+        <span style="font-family:'DM Mono',monospace; font-size:12px; color:var(--brown-dark);">₩${fmt(item.amt)}</span>
+        <button class="del-btn" onclick="deleteGoalItem('${type}',${i})">×</button>
+      </div>
+    `).join('');
+  };
+  renderList(goalState.savItems, 'goalSavList', 'sav');
+  renderList(goalState.invItems, 'goalInvList', 'inv');
+}
+
+function addGoalItem(type) {
+  const nameId = type === 'sav' ? 'goalSavName' : 'goalInvName';
+  const amtId = type === 'sav' ? 'goalSavItemAmt' : 'goalInvItemAmt';
+  const totalId = type === 'sav' ? 'goalSavAmt' : 'goalInvAmt';
+  const name = document.getElementById(nameId).value.trim();
+  const amt = parseNum(document.getElementById(amtId).value);
+  if (!name || !amt) return;
+  const arr = type === 'sav' ? goalState.savItems : goalState.invItems;
+  arr.push({ name, amt });
+  document.getElementById(nameId).value = '';
+  document.getElementById(amtId).value = '';
+  // 합산해서 총액 인풋에 반영
+  const total = arr.reduce((s, x) => s + x.amt, 0);
+  document.getElementById(totalId).value = total;
+  renderGoal();
+}
+
+function deleteGoalItem(type, i) {
+  const arr = type === 'sav' ? goalState.savItems : goalState.invItems;
+  const totalId = type === 'sav' ? 'goalSavAmt' : 'goalInvAmt';
+  arr.splice(i, 1);
+  const total = arr.reduce((s, x) => s + x.amt, 0);
+  document.getElementById(totalId).value = total || '';
+  renderGoal();
+}
+
+function calcGoalMonthly() {
+  const target = parseNum(document.getElementById('goalTarget').value) || 50000000;
+  const manualSav = parseNum(document.getElementById('goalSavAmt').value);
+  const manualInv = parseNum(document.getElementById('goalInvAmt').value);
+  const current = manualSav + manualInv;
+  const remain = Math.max(0, target - current);
+  const months = parseInt(document.getElementById('goalMonths').value);
+
+  if (months > 0 && remain > 0) {
+    const monthly = Math.ceil(remain / months);
+    document.getElementById('goalMonthlyNeeded').textContent = '₩' + fmt(monthly);
+    const years = Math.floor(months / 12);
+    const mo = months % 12;
+    const period = years > 0 ? `${years}년 ${mo}개월` : `${months}개월`;
+    document.getElementById('goalCalcDesc').innerHTML =
+      `남은 금액 <b>₩${fmt(remain)}</b>을<br>${period} 안에 모으려면<br>매달 <b style="color:var(--accent)">₩${fmt(monthly)}</b> 저축이 필요해요.`;
+  } else if (remain <= 0) {
+    document.getElementById('goalMonthlyNeeded').textContent = '🎉 달성!';
+    document.getElementById('goalCalcDesc').textContent = '목표를 달성했어요!';
+  } else {
+    document.getElementById('goalMonthlyNeeded').textContent = '–';
+    document.getElementById('goalCalcDesc').textContent = '';
+  }
+}
+
+// ═══════════════════════════════════════
+// PLACEHOLDER POLYFILL for contenteditable
+// ═══════════════════════════════════════
+document.querySelectorAll('[data-placeholder]').forEach(el => {
+  if (!el.textContent.trim()) el.style.color = 'var(--text-light)';
+  el.addEventListener('focus', function() {
+    if (!this.textContent.trim()) { this.textContent = ''; this.style.color = 'var(--text)'; }
+  });
+  el.addEventListener('blur', function() {
+    if (!this.textContent.trim()) this.style.color = 'var(--text-light)';
+  });
+});
+
+// ═══════════════════════════════════════
+// LOCALSTORAGE
+// ═══════════════════════════════════════
+const STORAGE_KEY = 'soyeon_budget_v1';
+const GOAL_KEY = 'soyeon_goal_v1';
+
+function saveData() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(GOAL_KEY, JSON.stringify(goalState));
+  } catch(e) { console.warn('저장 실패', e); }
+}
+
+function loadData() {
+  try {
+    const s = localStorage.getItem(STORAGE_KEY);
+    const g = localStorage.getItem(GOAL_KEY);
+    if (s) Object.assign(state, JSON.parse(s));
+    if (g) Object.assign(goalState, JSON.parse(g));
+  } catch(e) { console.warn('불러오기 실패', e); }
+}
+
+// 데이터 바뀔 때마다 자동 저장 — 기존 함수들 래핑
+const _origAddFixed = addFixed;
+const _origDeleteFixed = deleteFixed;
+const _origAddInstall = addInstall;
+const _origDeleteInstall = deleteInstall;
+const _origAddExpense = addExpense;
+const _origDeleteExpense = deleteExpense;
+const _origAddSaving = addSaving;
+const _origDeleteSaving = deleteSaving;
+const _origAddInvest = addInvest;
+const _origDeleteInvest = deleteInvest;
+const _origAddPurposeSav = addPurposeSav;
+const _origAddGoalItem = addGoalItem;
+const _origDeleteGoalItem = deleteGoalItem;
+
+addFixed = (...a) => { _origAddFixed(...a); saveData(); };
+deleteFixed = (...a) => { _origDeleteFixed(...a); saveData(); };
+addInstall = (...a) => { _origAddInstall(...a); saveData(); };
+deleteInstall = (...a) => { _origDeleteInstall(...a); saveData(); };
+addExpense = (...a) => { _origAddExpense(...a); saveData(); };
+deleteExpense = (...a) => { _origDeleteExpense(...a); saveData(); };
+addSaving = (...a) => { _origAddSaving(...a); saveData(); };
+deleteSaving = (...a) => { _origDeleteSaving(...a); saveData(); };
+addInvest = (...a) => { _origAddInvest(...a); saveData(); };
+deleteInvest = (...a) => { _origDeleteInvest(...a); saveData(); };
+addPurposeSav = (...a) => { _origAddPurposeSav(...a); saveData(); };
+addGoalItem = (...a) => { _origAddGoalItem(...a); saveData(); };
+deleteGoalItem = (...a) => { _origDeleteGoalItem(...a); saveData(); };
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+function renderAll() {
+  const d = getMonthData();
+  document.getElementById('totalIncome').value = d.income || '';
+  document.getElementById('weeklyBudget').value = d.weeklyBudget || '';
+  renderFixed();
+  renderInstall();
+  renderExpenses();
+  updateWeeklyChallenge();
+  renderSavings();
+  renderInvest();
+  renderPurposeSav();
+  renderGoal();
+}
+
+// 수입 입력 자동 저장
+document.getElementById('totalIncome').addEventListener('change', () => saveData());
+
+// 주간 예산 자동 저장
+document.getElementById('weeklyBudget').addEventListener('change', () => saveData());
+
+// 목표 금액 자동 저장
+document.getElementById('goalTarget').addEventListener('change', () => saveData());
+document.getElementById('goalSavAmt').addEventListener('change', () => saveData());
+document.getElementById('goalInvAmt').addEventListener('change', () => saveData());
+
+// Extra savings sync
+document.getElementById('extraSavings').addEventListener('input', function() {
+  const d = getMonthData();
+  d.extraSavings[state.currentWeek] = parseNum(this.value);
+  renderSavingLog();
+  saveData();
+});
+
+// 투자 현재가 자동 저장 (이벤트 위임)
+document.getElementById('investBody').addEventListener('change', () => saveData());
+
+loadData();
+updateMonthDisplay();
+renderAll();
+
+// init date input to today
+const today = new Date().toISOString().split('T')[0];
+document.getElementById('expDate').value = today;
+</script>
+</body>
+</html>
